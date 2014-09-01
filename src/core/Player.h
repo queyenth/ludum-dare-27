@@ -25,6 +25,7 @@ public:
     move.AddFrame(Rect(offsetX*2, offsetY, offsetX*2+width, offsetY-height), texture);
     currentJumpVel = 0;
     currentState = STADE;
+
     experience = 0;
   }
   
