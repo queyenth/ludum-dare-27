@@ -5,23 +5,14 @@
 #include <cstdlib>
 #include <ctime>
 
-/*
-Level:
-0 - Empty
-1 - Block
-2 - Player
-3 - Guard
-*/
-
 class Level {
 public:
   enum Type { EMPTY, BLOCK, GUARD, EXIT, ALL };
   
   Level(const Texture &texture) {
-    sprites[BLOCK].SetTextureRect(Rect(0, 131, 32, 100), texture); 
-    sprites[EMPTY].SetTextureRect(Rect(34, 131, 66, 100), texture);
-    sprites[GUARD].SetTextureRect(Rect(102, 131, 134, 100), texture);
-    sprites[EXIT].SetTextureRect(Rect(136, 131, 168, 100), texture);
+    sprites[BLOCK].SetTextureRect(Rect(0, 132, 32, 100), texture);
+    sprites[GUARD].SetTextureRect(Rect(99, 132, 131, 100), texture);
+    sprites[EXIT].SetTextureRect(Rect(132, 265, 164, 200), texture);
     sprites[BLOCK].SetWidth(32);
     sprites[BLOCK].SetHeight(32);
     sprites[EMPTY].SetWidth(32);
@@ -29,7 +20,9 @@ public:
     sprites[GUARD].SetWidth(32);
     sprites[GUARD].SetHeight(32);
     sprites[EXIT].SetWidth(32);
-    sprites[EXIT].SetHeight(32);
+    sprites[EXIT].SetHeight(64);
+
+    srand(time(NULL));
   }
 
   void GenerateBlocks() {
@@ -75,21 +68,22 @@ public:
   void GenerateGuard() {
     int x;
     int y;
-    do {
-      x = rand()%15;
-      y = rand()%15;
+    bool isGenerated = false;
+    while (!isGenerated) {
+      do {
+        x = rand()%15;
+        y = rand()%15;
+      }
+      while (level[y][x] != BLOCK);
+      while (level[y+1][x] != EMPTY) y++;
+      if (CheckOnValid(y, x)) {
+        level[y][x] = GUARD;
+        isGenerated = true;
+      }
     }
-    while (level[y][x] != BLOCK);
-    while (level[y+1][x] != EMPTY) y++;
-    if (CheckOnValid(y, x)) {
-      level[y][x] = GUARD;
-    }
-    else
-      GenerateGuard();
   }
   
   void GenerateLevel() {
-    srand(time(NULL));
     for (int i = 0; i < 16; i++)
       for (int j = 0; j < 16; j++)
         level[i][j] = EMPTY;
@@ -97,12 +91,18 @@ public:
     int count = rand()%4+4;
     for (int i = 0; i < count; i++)
       GenerateGuard();
-    level[0][14] = EXIT;
+    level[0][7] = EXIT;
+    guards = 0;
+    for (int i = 0; i < 16; i++)
+      for (int j = 0; j < 16; j++)
+        if (level[i][j] == Level::GUARD)
+          guards++;
   }
 
   void Draw(const Texture &texture) {
     for (int i = 0; i < 16; i++) {
       for (int j = 0; j < 16; j++) {
+        if (level[i][j] == EMPTY) continue;
         float x = j*32;
         float y = i*32;
         sprites[level[i][j]].SetX(x);
@@ -110,8 +110,10 @@ public:
         sprites[level[i][j]].Draw(texture);
       }
     }
+    sprites[level[0][7]].Draw(texture);
   }
 
   Type level[16][16];
   Sprite sprites[ALL];
+  int guards;
 };

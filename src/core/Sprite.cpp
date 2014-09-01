@@ -40,7 +40,6 @@ void Sprite::Draw(const Texture &texture) const {
   float bottom = isFlippedY ? textureRect.top : textureRect.bottom;
 
   if (width && height) {
-    glEnable(GL_TEXTURE_2D);
     texture.BindTexture();
     glBegin(GL_QUADS);
       glTexCoord2f(left, top);
