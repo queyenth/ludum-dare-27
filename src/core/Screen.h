@@ -1,13 +1,13 @@
 #pragma once
 
+#include <string>
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm.hpp>
+
 #include "Input.h"
 #include "Color.h"
-
-#include <string>
-#include <windows.h>
-#include <windowsx.h>
-#include <gl/GL.h>
-#include <gl/GLU.h>
 
 using namespace std;
 
@@ -15,13 +15,13 @@ class Screen {
 public:
 
   Screen();
-  Screen(wstring name, int width=640, int height=480, bool fullscreen=false, int bits=32);
+  Screen(int width, int height, string name, bool fullscreen=false);
 
   ~Screen();
 
   void CreateUserWindow();
   void SwitchBuffers();
-  void Clear(se::Color color = se::Color(1.0f, 1.0f, 1.0f));
+  void Clear();
   void ProcessEvents();
   bool IsOpened() const;
   bool IsActive() const;
@@ -31,27 +31,20 @@ public:
   void SetWidth(int width);
   void SetHeight(int height);
   void SetFullscreen(bool fullscreen);
-  wstring GetName() const;
-  HWND GetHandle() const;
-  HDC GetDC() const;
+  string GetName() const;
   void KillWindow();
   void ResizeWindow(int width, int height);
 private:
   
   void InitGL();
-  void ProcessEvents(UINT uMsg, WPARAM wParam, LPARAM lParam);
-  static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+  GLFWwindow *window;
 
   Input input;
-  HINSTANCE hInstance;
   int width;
   int height;
-  int bits;
   bool isOpened;
   bool fullscreen;
   bool isActive;
-  wstring nameOfWindow;
-  HWND hWnd;
-  HDC hDC;
-  HGLRC hRC;
+  string nameOfWindow;
 };

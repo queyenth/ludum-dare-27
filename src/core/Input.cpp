@@ -1,64 +1,25 @@
 #include "Input.h"
 
-Input::Input() {
-  for (int i = 0; i < 256; i++)
-    keys[i] = false;
-
-  mouse.x = 0;
-  mouse.y = 0;
-
-  mouse.leftButton = false;
-  mouse.rightButton = false;
+Input::Input() : window(NULL) {
 }
 
-void Input::PressKey(int key) {
-  keys[key] = true;
+Input::Input(GLFWwindow *window) : window(window) {
 }
 
-void Input::UnPressKey(int key) {
-  keys[key] = false;
-}
+Input::~Input() {}
 
 bool Input::IsKeyPressed(int key) const {
-  return keys[key];
+  return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
-void Input::SetMouseX(int x) {
-  mouse.x = x;
+void Input::GetMouse(double *x, double *y) const {
+  glfwGetCursorPos(window, x, y);
 }
 
-void Input::SetMouseY(int y) {
-  mouse.y = y;
+bool Input::IsMousePressed(int button) const {
+  return glfwGetMouseButton(window, button) == GLFW_PRESS;
 }
 
-int Input::GetMouseX() const {
-  return mouse.x;
-}
-
-int Input::GetMouseY() const {
-  return mouse.y;
-}
-
-void Input::PressLeftMouse() {
-  mouse.leftButton = true;
-}
-
-void Input::PressRightMouse() {
-  mouse.rightButton = true;
-}
-
-bool Input::IsLeftMousePressed() const {
-  return mouse.leftButton;
-}
-
-bool Input::IsRightMousePressed() const {
-  return mouse.rightButton;
-}
-
-void Input::UnPressLeftMouse() {
-  mouse.leftButton = false;
-}
-
-void Input::UnPressRightMouse() {
-  mouse.rightButton = false;
+void Input::SetWindow(GLFWwindow* window) {
+  this->window = window;
 }
