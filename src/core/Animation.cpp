@@ -1,172 +1,145 @@
 #include "Animation.h"
 
-Animation::Animation() : x(0), y(0), width(0), height(0), angle(0), positionChanged(true),
-isFlippedX(false), isFlippedY(false), isFixed(false), color(se::Color()), currentFrame(0), speed(500) {
+#include <GLFW/glfw3.h>
+#include <gtc/matrix_transform.hpp>
+
+Animation::Animation() : Renderable(), currentFrame(0), speed(0.1) {
 }
 
 
-Animation::Animation(float x, float y, int width, int height, se::Color color, bool isFixed) : x(x), y(y), width(width), height(height), angle(0), positionChanged(true),
-isFlippedX(false), isFlippedY(false), isFixed(isFixed), color(color), currentFrame(0), speed(500) {
+Animation::Animation(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed) :
+  Renderable(x, y, width, height, color, program, isFixed), currentFrame(0), speed(0.1) {
 }
 
 Animation::~Animation(){}
   
-void Animation::Draw(const Texture &texture) const {
-  static DWORD test = 0;
+void Animation::Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) {
+  static double test = 0;
   if (!texture.IsValid() || !width || !height || !textureRects.size()) return;
 
   if (positionChanged) {
-    float Cos = cosf(angle*(float)(3.14159265/180));
-    float Sin = sinf(angle*(float)(3.14159265/180));
-    matrix.Set(0, Cos);
-    matrix.Set(1, Sin);
-    matrix.Set(4, -Sin);
-    matrix.Set(5, Cos);
-    matrix.Set(12, x);
-    matrix.Set(13, y);
-
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x+width/2, y+height/2, 0.0f));
+    matrix = glm::rotate(T, (float)angle, glm::vec3(0.0f, 0.0f, 1.0f));
     positionChanged = false;
   }
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glMultMatrixf(matrix.GetMatrix());
-  if (color.a != 0.0f)
-    glColor4f(color.r, color.g, color.b, color.a);
-  else
-    glColor3f(color.r, color.g, color.b);
 
-  float top = isFlippedY ? textureRects[currentFrame].bottom : textureRects[currentFrame].top;
-  float left = isFlippedX ? textureRects[currentFrame].right : textureRects[currentFrame].left;
-  float right = isFlippedX ? textureRects[currentFrame].left : textureRects[currentFrame].right;
-  float bottom = isFlippedY ? textureRects[currentFrame].top : textureRects[currentFrame].bottom;
+  if (flipped) {
+    for (int i = 0; i < textureRects.size(); i++) {
+      float top = isFlippedY ? textureRects[i].bottom : textureRects[i].top;
+      float left = isFlippedX ? textureRects[i].right : textureRects[i].left;
+      float right = isFlippedX ? textureRects[i].left : textureRects[i].right;
+      float bottom = isFlippedY ? textureRects[i].top : textureRects[i].bottom;
+      textureRects[i].bottom = bottom;
+      textureRects[i].right = right;
+      textureRects[i].left = left;
+      textureRects[i].top = top;
+    }
+    GenUVBuffers();
+    flipped = false;
+  }
 
-  glEnable(GL_TEXTURE_2D);
+
+  GLuint MatrixID = glGetUniformLocation(program, "MVP");
+  GLuint TextureID = glGetUniformLocation(program, "myTextureSampler");
+
+  glm::mat4 MVP = Projection * View * matrix;
+
+  glUseProgram(program);
+
+  glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+  glActiveTexture(GL_TEXTURE0);
   texture.BindTexture();
-  glBegin(GL_QUADS);
-    glTexCoord2f(left, top);
-    glVertex2f(0, 0);
-    
-    glTexCoord2f(right, top);
-    glVertex2f(width, 0);
+  glUniform1i(TextureID, 0);
 
-    glTexCoord2f(right, bottom);
-    glVertex2f(width, height);
-    
-    glTexCoord2f(left, bottom);
-    glVertex2f(0, height);
-  glEnd();
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+  glVertexAttribPointer(
+    0,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
 
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();
+  glEnableVertexAttribArray(1);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer[currentFrame]);
+  glVertexAttribPointer(
+    1,
+    2,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
+
+  glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
+
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
 
   if (currentFrame+1 < textureRects.size()) {
-    if (GetTickCount() - test >= speed) {
+    if (glfwGetTime() - test >= speed) {
       currentFrame++;
-      test = GetTickCount();
+      test = glfwGetTime();
     }
   }
-  else if (loop && GetTickCount() - test >= speed) {
+  else if (loop && glfwGetTime() - test >= speed) {
     currentFrame = 0;
-    test = GetTickCount();
+    test = glfwGetTime();
   }
-}
-
-float Animation::GetX() const {
-  return x;
-}
-
-float Animation::GetY() const {
-  return y;
-}
-
-int Animation::GetWidth() const {
-  return width;
-}
-
-int Animation::GetHeight() const {
-  return height;
-}
-
-se::Color Animation::GetColor() const {
-  return color;
-}
-
-double Animation::GetAngle() {
-  return angle;
 }
 
 int Animation::GetCurrentFrame() const {
   return currentFrame;
 }
 
-void Animation::SetX(float x) {
-  this->x = x;
-  positionChanged = true;
-}
-
-void Animation::SetY(float y) {
-  this->y = y;
-  positionChanged = true;
-}
-
-void Animation::SetColor(se::Color color) {
-  this->color = color;
-}
-
-void Animation::SetWidth(int width) {
-  this->width = width;
-}
-
-void Animation::SetHeight(int height) {
-  this->height = height;
-}
-
-void Animation::SetFixedMode(bool isFixed) {
-  this->isFixed = isFixed;
-}
-
 void Animation::SetLoopMode(bool loop) {
   this->loop = loop;
-}
-
-void Animation::SetAngle(double angle) {
-  this->angle = angle;
 }
 
 void Animation::SetCurrentFrame(int currentFrame) {
   this->currentFrame = currentFrame;
 }
 
-void Animation::SetSpeed(DWORD speed) {
+void Animation::SetSpeed(double speed) {
   this->speed = speed;
 }
 
-void Animation::AddFrame(Rect textureRect, const Texture &texture) {
+void Animation::AddFrame(const Texture &texture, Rect textureRect) {
   textureRects.push_back(Rect(textureRect.left/texture.GetWidth(), textureRect.top/texture.GetHeight(), textureRect.right/texture.GetWidth(), textureRect.bottom/texture.GetHeight()));
 }
 
-void Animation::Move(float offsetX, float offsetY) {
-  SetX(x+offsetX);
-  SetY(y+offsetY);
-}
+void Animation::GenUVBuffers() {
+  for (int i = 0; i < uv_buffers.size(); i++) {
+    uv_buffers[i].clear();
+  }
+  uv_buffers.clear();
+  for (int i = 0; i < uvbuffer.size(); i++) {
+    if (glIsBuffer(uvbuffer[i])) {
+      glDeleteBuffers(1, &uvbuffer[i]);
+    }
+  }
+  uvbuffer.clear();
+  for (int i = 0; i < textureRects.size(); i++) {
+    std::vector<GLfloat> uv_buffer(12);
+    uv_buffer[0] = uv_buffer[8] = uv_buffer[10] = textureRects[i].left;
+    uv_buffer[1] = uv_buffer[3] = uv_buffer[11] = textureRects[i].top;
+    uv_buffer[2] = uv_buffer[4] = uv_buffer[6] = textureRects[i].right;
+    uv_buffer[5] = uv_buffer[7] = uv_buffer[9] = textureRects[i].bottom;
+    uv_buffers.push_back(uv_buffer);
 
-void Animation::Rotate(double newAngle) {
-  angle += newAngle;
-  positionChanged = true;
-}
+    uvbuffer.push_back(0);
+    if (glIsBuffer(uvbuffer[i]))
+      glDeleteBuffers(1, &uvbuffer[i]);
+    glGenBuffers(1, &uvbuffer[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, uvbuffer[i]);
+    glBufferData(GL_ARRAY_BUFFER, uv_buffers[i].size() * sizeof(GLfloat), &uv_buffers[i][0], GL_STATIC_DRAW);
+  }
 
-void Animation::FlipX(bool isFlip) {
-  isFlippedX = isFlip;
 }
-
-void Animation::FlipY(bool isFlip) {
-  isFlippedY = isFlip;
-}
-
-bool Animation::IsFlippedX() const {
-  return isFlippedX;
-}
-
-bool Animation::IsFlippedY() const {
-  return isFlippedY;
+void Animation::AddFrame(const Texture &texture) {
+  Rect textureRect = Rect(texture);
+  textureRects.push_back(Rect(textureRect.left/texture.GetWidth(), textureRect.top/texture.GetHeight(), textureRect.right/texture.GetWidth(), textureRect.bottom/texture.GetHeight()));
 }

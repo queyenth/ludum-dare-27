@@ -11,7 +11,9 @@ ShaderProgram::ShaderProgram(Shader& vertexShader, Shader& fragmentShader) {
   Link(vertexShader, fragmentShader);
 }
 
-ShaderProgram::~ShaderProgram() {}
+ShaderProgram::~ShaderProgram() {
+  glDeleteProgram(program);
+}
 
 void ShaderProgram::Link(Shader& vertexShader, Shader& fragmentShader) {
   vertexShader.Compile();

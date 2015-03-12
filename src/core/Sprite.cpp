@@ -1,145 +1,93 @@
 #include "Sprite.h"
 
-Sprite::Sprite() : x(0), y(0), width(0), height(0), angle(0), positionChanged(true),
-isFlippedX(false), isFlippedY(false), isFixed(false), color(se::Color()) {
+#include <gtc/matrix_transform.hpp>
+
+Sprite::Sprite() : Renderable() {
 }
 
-
-Sprite::Sprite(float x, float y, int width, int height, se::Color color, bool isFixed) : x(x), y(y), width(width), height(height), angle(0), positionChanged(true),
-isFlippedX(false), isFlippedY(false), isFixed(isFixed), color(color) {
+Sprite::Sprite(float x, float y, float width, float height,const se::Color& color, const ShaderProgram& program,
+  bool isFixed) : Renderable(x, y, width, height, color, program, isFixed) {
 }
 
-Sprite::~Sprite(){}
-  
-void Sprite::Draw(const Texture &texture) const {
-  if (!texture.IsValid() || !width || !height) return;
+Sprite::~Sprite() {
+  if (glIsBuffer(uvbuffer))
+    glDeleteBuffers(1, &uvbuffer);
+}
+
+void Sprite::Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) const {
+  if (!texture.IsValid() || !width || !height || !glIsBuffer(vertexbuffer) || !glIsBuffer(uvbuffer)) return;
 
   if (positionChanged) {
-    float Cos = cosf(angle*(float)(3.14159265/180));
-    float Sin = sinf(angle*(float)(3.14159265/180));
-    matrix.Set(0, Cos);
-    matrix.Set(1, Sin);
-    matrix.Set(4, -Sin);
-    matrix.Set(5, Cos);
-    matrix.Set(12, x);
-    matrix.Set(13, y);
-
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
+    matrix = glm::rotate(T, (float)angle, glm::vec3(0.0f, 0.0f, 1.0f));
     positionChanged = false;
   }
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glMultMatrixf(matrix.GetMatrix());
-  if (color.a != 0.0f)
-    glColor4f(color.r, color.g, color.b, color.a);
-  else
-    glColor3f(color.r, color.g, color.b);
 
   float top = isFlippedY ? textureRect.bottom : textureRect.top;
   float left = isFlippedX ? textureRect.right : textureRect.left;
   float right = isFlippedX ? textureRect.left : textureRect.right;
   float bottom = isFlippedY ? textureRect.top : textureRect.bottom;
 
-  if (width && height) {
-    texture.BindTexture();
-    glBegin(GL_QUADS);
-      glTexCoord2f(left, top);
-      glVertex2f(0, 0);
-      
-      glTexCoord2f(right, top);
-      glVertex2f(width, 0);
+  GLuint MatrixID = glGetUniformLocation(program, "MVP");
+  GLuint TextureID = glGetUniformLocation(program, "myTextureSampler");
 
-      glTexCoord2f(right, bottom);
-      glVertex2f(width, height);
-      
-      glTexCoord2f(left, bottom);
-      glVertex2f(0, height);
-    glEnd();
-  }
+  glm::mat4 MVP = Projection * View * matrix;
 
-  glMatrixMode(GL_MODELVIEW);
-  glPopMatrix();
+  glUseProgram(program);
+
+  glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+  glActiveTexture(GL_TEXTURE0);
+  texture.BindTexture();
+  glUniform1i(TextureID, 0);
+
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+  glVertexAttribPointer(
+    0,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
+
+  glEnableVertexAttribArray(1);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glVertexAttribPointer(
+    1,
+    2,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
+
+  glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
+
+  glDisableVertexAttribArray(0);
+  glDisableVertexAttribArray(1);
 }
 
-float Sprite::GetX() const {
-  return x;
+void Sprite::GenUVBuffers() {
+  uv_buffer[0] = uv_buffer[8] = uv_buffer[10] = this->textureRect.left;
+  uv_buffer[1] = uv_buffer[3] = uv_buffer[11] = this->textureRect.top;
+  uv_buffer[2] = uv_buffer[4] = uv_buffer[6] = this->textureRect.right;
+  uv_buffer[5] = uv_buffer[7] = uv_buffer[9] = this->textureRect.bottom;
+
+  if (glIsBuffer(uvbuffer))
+    glDeleteBuffers(1, &uvbuffer);
+  glGenBuffers(1, &uvbuffer);
+  glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(uv_buffer), uv_buffer, GL_STATIC_DRAW);
 }
 
-float Sprite::GetY() const {
-  return y;
-}
 
-int Sprite::GetWidth() const {
-  return width;
-}
-
-int Sprite::GetHeight() const {
-  return height;
-}
-
-se::Color Sprite::GetColor() const {
-  return color;
-}
-
-double Sprite::GetAngle() {
-  return angle;
-}
-
-void Sprite::SetX(float x) {
-  this->x = x;
-  positionChanged = true;
-}
-
-void Sprite::SetY(float y) {
-  this->y = y;
-  positionChanged = true;
-}
-
-void Sprite::SetColor(se::Color color) {
-  this->color = color;
-}
-
-void Sprite::SetWidth(int width) {
-  this->width = width;
-}
-
-void Sprite::SetHeight(int height) {
-  this->height = height;
-}
-
-void Sprite::SetFixedMode(bool isFixed) {
-  this->isFixed = isFixed;
-}
-
-void Sprite::SetAngle(double angle) {
-  this->angle = angle;
-}
-
-void Sprite::SetTextureRect(Rect textureRect, const Texture &texture) {
+void Sprite::SetTexture(const Texture &texture, Rect textureRect) {
   this->textureRect = Rect(textureRect.left/texture.GetWidth(), textureRect.top/texture.GetHeight(), textureRect.right/texture.GetWidth(), textureRect.bottom/texture.GetHeight());
 }
 
-void Sprite::Move(float offsetX, float offsetY) {
-  SetX(x+offsetX);
-  SetY(y+offsetY);
-}
-
-void Sprite::Rotate(double newAngle) {
-  angle += newAngle;
-  positionChanged = true;
-}
-
-void Sprite::FlipX(bool isFlip) {
-  isFlippedX = isFlip;
-}
-
-void Sprite::FlipY(bool isFlip) {
-  isFlippedY = isFlip;
-}
-
-bool Sprite::IsFlippedX() const {
-  return isFlippedX;
-}
-
-bool Sprite::IsFlippedY() const {
-  return isFlippedY;
+void Sprite::SetTexture(const Texture &texture) {
+  textureRect = Rect(texture);
+  this->textureRect = Rect(textureRect.left/texture.GetWidth(), textureRect.top/texture.GetHeight(), textureRect.right/texture.GetWidth(), textureRect.bottom/texture.GetHeight());
 }

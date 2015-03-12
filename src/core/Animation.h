@@ -1,59 +1,30 @@
 #pragma once
 #include <vector>
 
-#include "Texture.h"
-#include "Color.h"
-#include "Rect.h"
-#include "Matrix.h"
+#include "Renderable.h"
 
-class Animation {
+class Animation : public Renderable {
 public:
   Animation();
-  Animation(float x, float y, int width, int height, se::Color color, bool isFixed);
+  Animation(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed);
   
   virtual ~Animation();
   
-  void Draw(const Texture &texture) const;
-  float GetX() const;
-  float GetY() const;
-  int GetWidth() const;
-  int GetHeight() const;
-  se::Color GetColor() const;
-  double GetAngle();
+  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View);
   int GetCurrentFrame() const;
-  void SetX(float x);
-  void SetY(float y);
-  void SetColor(se::Color color);
-  void SetWidth(int width);
-  void SetHeight(int height);
-  void SetFixedMode(bool isFixed);
   void SetLoopMode(bool loop);
-  void SetAngle(double angle);
-  void SetSpeed(DWORD speed);
+  void SetSpeed(double speed);
   void SetCurrentFrame(int currentFrame);
-  void AddFrame(Rect textureRect, const Texture &texture);
-  void Move(float offsetX, float offsetY);
-  void Rotate(double newAngle);
-  void FlipX(bool isFlip);
-  void FlipY(bool isFlip);
-  bool IsFlippedX() const;
-  bool IsFlippedY() const;
+  void GenUVBuffers();
+  void AddFrame(const Texture &texture);
+  void AddFrame(const Texture &texture, Rect textureRect);
 
 private:
   std::vector<Rect> textureRects;
-  DWORD speed;
+  std::vector<std::vector<GLfloat> > uv_buffers;
+  std::vector<GLuint> uvbuffer;
+
+  double speed;
   mutable int currentFrame;
   bool loop;
-  
-  bool isFlippedX;
-  bool isFlippedY;
-  float x;
-  float y;
-  int width;
-  int height;
-  se::Color color;
-  mutable Matrix matrix;
-  mutable bool positionChanged;
-  double angle;
-  bool isFixed;
 };

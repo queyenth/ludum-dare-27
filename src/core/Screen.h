@@ -31,6 +31,7 @@ public:
   void SetWidth(int width);
   void SetHeight(int height);
   void SetFullscreen(bool fullscreen);
+  void SetClearColor(se::Color color);
   string GetName() const;
   void KillWindow();
   void ResizeWindow(int width, int height);

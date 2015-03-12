@@ -1,85 +1,167 @@
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+
 #include "core/Screen.h"
-#include "core/Texture.h"
 #include "core/Sprite.h"
 #include "core/Animation.h"
-#include "core/Level.h"
-#include "core/Player.h"
-#include "core/Physics.h"
-#include "core/Text.h"
 
 const int TENSECONDS = 10*1000;
+const float WIDTH = 1024;
+const float HEIGHT = 768;
 
-int main() {
-  Screen screen(L"Ludum dare 27", 32*16, 32*16);
-  Input &input = screen.GetInput();
-  Texture texture;
-  if (!texture.LoadFromFile("img\\spritesheet.png"))
-    exit(1);
-  Level level(texture);
-  Player player(texture);
-  Sprite background(0, 0, 32*16, 32*16, se::Color(), true);
-  background.SetTextureRect(Rect(0, 433, 512, 945), texture);
-  Animation door(7*32, 0, 32, 64, se::Color(), true);
-  door.AddFrame(Rect(132, 265, 164, 200), texture);
-  door.AddFrame(Rect(99, 265, 131, 200), texture);
-  door.AddFrame(Rect(66, 265, 98, 200), texture);
-  door.AddFrame(Rect(33, 265, 65, 200), texture);
-  door.AddFrame(Rect(0, 265, 32, 200), texture);
-  door.SetLoopMode(false);
+void DrawLogo(Screen &screen) {
+  Texture logoTexture;
+  ShaderProgram program = ShaderProgram(
+    Shader("LogoShader.vert", GL_VERTEX_SHADER),
+    Shader("LogoShader.frag", GL_FRAGMENT_SHADER)
+  );
+  double startTime = glfwGetTime();
 
-  level.GenerateLevel();
-  int seconds = GetTickCount();
-  char text[100];
-  while (screen.IsOpened()) {
-    screen.ProcessEvents();
-    
-    if (input.IsKeyPressed(VK_F1)) level.GenerateLevel();
-    
-    // ≈сли нажата клавиша влево, двигайс€ влево
-    if (input.IsKeyPressed(VK_LEFT)) {
-      player.sprite.Move(-8.0f, 0.0f);
-      if (player.CheckCollide(level, Level::BLOCK)) {
-        player.sprite.Move(8.0f, 0.0f);
-      }
-    }
-    // ј если нажата вправо - двигайс€ вправо
-    else if (input.IsKeyPressed(VK_RIGHT)) {
-      player.sprite.Move(8.0f, 0.0f);
-      if (player.CheckCollide(level, Level::BLOCK)) {
-        player.sprite.Move(-8.0f, 0.0f);
-      }
-    }
-    else if (player.currentState != Player::JUMP && player.currentState != Player::FALL)
-      player.currentState = Player::STADE;
-    
-    if (input.IsKeyPressed(VK_UP)) player.Jump(texture);
-    
-    Rect playerRect = Rect(player.sprite.GetX(), player.sprite.GetY(), player.sprite.GetX()+player.sprite.GetWidth(), player.sprite.GetY()+player.sprite.GetHeight());
-    Rect exitRect = Rect(7*32, 0, 8*32, 64);
-    
-    player.Update(level);
+  logoTexture.LoadFromFile("img/logo.png");
+  if (!logoTexture.IsValid()) {
+    exit(-1);
+  }
 
+  glm::mat4 Projection = glm::ortho(0.0f, WIDTH, HEIGHT, 0.0f, 0.1f, 100.f);
+  glm::mat4 View = glm::lookAt(
+    glm::vec3(0, 0, 2),
+    glm::vec3(0, 0, 0),
+    glm::vec3(0, 1, 0)
+  );
+
+  float x = (screen.GetWidth() - logoTexture.GetWidth()) / 2;
+  float y = (screen.GetHeight() - logoTexture.GetHeight()) / 2;
+  Sprite logo(x, y, logoTexture.GetWidth(), logoTexture.GetHeight(), se::Color(), program, true);
+  logo.GenVertexBuffers();
+  logo.SetTexture(logoTexture);
+  logo.GenUVBuffers();
+  screen.SetClearColor(se::Color(1.0f, 1.0f, 1.0f));
+  
+  GLuint alphaID = glGetUniformLocation(program, "alphaChannel");
+
+  GLfloat alpha = 0.0f;
+
+  double currentTime = startTime;
+
+  while (glfwGetTime() - startTime < 3 && screen.IsOpened()) {
     screen.Clear();
     
-    background.Draw(texture);
-    level.Draw(texture);
-    player.Draw(texture);
-    sprintf(text, "TIME %d", (TENSECONDS - (GetTickCount()-seconds))/1000);
-    Text::Draw(32*4, 32*15, se::Color(1.0f, 0.0f, 0.0f, 1.0f), text, texture);
-    sprintf(text, "POINTS %d", player.experience);
-    Text::Draw(32*4, 32*14, se::Color(), text, texture);
-    if (level.guards == 0) {
-      door.Draw(texture);
+    if (glfwGetTime() - currentTime >= 0.05) {
+      alpha += 0.024f;
+      currentTime = glfwGetTime();
     }
-    if ((level.guards == 0 && Physics::CheckCollide(playerRect, exitRect)) || GetTickCount() - seconds >= TENSECONDS-1000) {
-      level.GenerateLevel();
-      int prevExp = player.experience;
-      player = Player(texture);
-      player.experience = (GetTickCount() - seconds)/1000 + prevExp + 1;
-      seconds = GetTickCount();
-      door.SetCurrentFrame(0);
-    }
+
+    glUniform1f(alphaID, alpha);
+    logo.Draw(logoTexture, Projection, View);
+
     screen.SwitchBuffers();
+    screen.ProcessEvents();
+    Sleep(10);
+  }
+}
+
+void DrawAnimation(Screen &screen) {
+  Texture texture;
+  Input input = screen.GetInput();
+  ShaderProgram program = ShaderProgram(
+    Shader("VertexShader.vert", GL_VERTEX_SHADER),
+    Shader("FragmentShader.frag", GL_FRAGMENT_SHADER)
+  );
+  double startTime = glfwGetTime();
+
+  texture.LoadFromFile("img/spritesheet.png");
+  if (!texture.IsValid()) {
+    exit(-1);
+  }
+
+  glm::mat4 Projection = glm::ortho(0.0f, WIDTH, HEIGHT, 0.0f, 0.1f, 100.f);
+  glm::mat4 View = glm::lookAt(
+    glm::vec3(0, 0, 2),
+    glm::vec3(0, 0, 0),
+    glm::vec3(0, 1, 0)
+  );
+
+  Animation animation(0, 0, 32, 64, se::Color(), program, false);
+  animation.AddFrame(texture, Rect(0, 133, 31, 197));
+  animation.AddFrame(texture, Rect(33, 133, 65, 197));
+  animation.AddFrame(texture, Rect(67, 133, 98, 197));
+  animation.AddFrame(texture, Rect(100, 133, 131, 197));
+  animation.SetLoopMode(true);
+  animation.GenVertexBuffers();
+  animation.GenUVBuffers();
+
+  screen.SetClearColor(se::Color(1.0f, 1.0f, 1.0f));
+  
+  while (!input.IsKeyPressed(GLFW_KEY_ESCAPE) && screen.IsOpened()) {
+    screen.Clear();
+    
+    animation.Draw(texture, Projection, View);
+
+    if (input.IsKeyPressed(GLFW_KEY_LEFT)) {
+      animation.Move(-5, 0);
+    }
+    else if (input.IsKeyPressed(GLFW_KEY_RIGHT)) {
+      animation.Move(5, 0);
+    }
+    if (input.IsKeyPressed(GLFW_KEY_UP)) {
+      animation.Move(0, -5);
+    }
+    else if (input.IsKeyPressed(GLFW_KEY_DOWN)) {
+      animation.Move(0, 5);
+    }
+
+    if (input.IsKeyPressed(GLFW_KEY_F1)) {
+      animation.FlipX(true);
+    }
+
+    screen.SwitchBuffers();
+    screen.ProcessEvents();
+    Sleep(10);
+  }
+}
+
+int main() {
+  Screen screen(WIDTH, HEIGHT, "PlatOK Software");
+  Input &input = screen.GetInput();
+
+  Texture texture;
+  if (!texture.LoadFromFile("img/spritesheet.png"))
+    exit(1);
+
+  ShaderProgram program = ShaderProgram(
+    Shader("VertexShader.vert", GL_VERTEX_SHADER),
+    Shader("FragmentShader.frag", GL_FRAGMENT_SHADER)
+  );
+
+  GLuint VertexArrayID;
+  glGenVertexArrays(1, &VertexArrayID);
+  glBindVertexArray(VertexArrayID);
+
+  glm::mat4 Projection = glm::ortho(0.0f, WIDTH, HEIGHT, 0.0f, 0.1f, 100.f);
+  glm::mat4 View = glm::lookAt(
+    glm::vec3(0, 0, 2),
+    glm::vec3(0, 0, 0),
+    glm::vec3(0, 1, 0)
+  );
+
+  Texture backgroundTexture;
+  backgroundTexture.LoadFromFile("img/back.png");
+  if (!backgroundTexture) {
+    exit(-1);
+  }
+  Sprite background(0, 0, screen.GetWidth(), screen.GetHeight(), se::Color(), program, true);
+  background.GenVertexBuffers();
+  background.SetTexture(backgroundTexture);
+  background.GenUVBuffers();
+
+  //DrawLogo(screen);
+  DrawAnimation(screen);
+
+  while (screen.IsOpened()) {
+    screen.Clear();
+    //background.Draw(backgroundTexture, Projection, View);
+    screen.SwitchBuffers();
+    screen.ProcessEvents();
     Sleep(15);
   }
   return 0;

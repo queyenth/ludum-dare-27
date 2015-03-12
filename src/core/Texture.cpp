@@ -1,6 +1,12 @@
 #include "Texture.h"
 
+#include <algorithm>
+
 Texture::Texture() : image(0), width(0), height(0), isValid(false) {
+}
+
+Texture::Texture(std::string imagePath) : image(0), width(0), height(0), isValid(false) {
+  LoadFromFile(imagePath);
 }
 
 Texture::~Texture() {
@@ -8,6 +14,9 @@ Texture::~Texture() {
 
 bool Texture::LoadFromFile(std::string imagePath) {
   isValid = true;
+#ifdef _WIN32
+  std::replace(imagePath.begin(), imagePath.end(), '/', '\\');
+#endif
   SOIL_load_image(imagePath.c_str(), &width, &height, NULL, SOIL_LOAD_L);
   image = SOIL_load_OGL_texture
   (

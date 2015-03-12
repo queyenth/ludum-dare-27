@@ -1,52 +1,28 @@
 #pragma once
-#include "Matrix.h"
-#include "Rect.h"
+
+#include <vector>
+
+#include <GL/glew.h>
+#include <glm.hpp>
+
 #include "Texture.h"
-#include "Color.h"
+#include "Renderable.h"
 
-#include <Windows.h>
-#include <gl/GL.h>
-
-class Sprite {
+class Sprite : public Renderable {
 public:
   Sprite();
-  Sprite(float x, float y, int width, int height, se::Color color, bool isFixed);
+  Sprite(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed);
   
   virtual ~Sprite();
   
-  void Draw(const Texture &texture) const;
-  float GetX() const;
-  float GetY() const;
-  int GetWidth() const;
-  int GetHeight() const;
-  se::Color GetColor() const;
-  double GetAngle();
-  void SetX(float x);
-  void SetY(float y);
-  void SetColor(se::Color color);
-  void SetWidth(int width);
-  void SetHeight(int height);
-  void SetFixedMode(bool isFixed);
-  void SetAngle(double angle);
-  void SetTextureRect(Rect textureRect, const Texture &texture);
-  void Move(float offsetX, float offsetY);
-  void Rotate(double newAngle);
-  void FlipX(bool isFlip);
-  void FlipY(bool isFlip);
-  bool IsFlippedX() const;
-  bool IsFlippedY() const;
+  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) const;
+  void GenUVBuffers();
+  void SetTexture(const Texture &texture, Rect textureRect);
+  void SetTexture(const Texture &texture);
+
 private:
-  bool isFlippedX;
-  bool isFlippedY;
   Rect textureRect;
-  float x;
-  float y;
-  int width;
-  int height;
-  
-  se::Color color;
-  mutable Matrix matrix;
-  mutable bool positionChanged;
-  double angle;
-  bool isFixed;
+
+  GLfloat uv_buffer[12];
+  GLuint uvbuffer;
 };

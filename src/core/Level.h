@@ -9,18 +9,21 @@ class Level {
 public:
   enum Type { EMPTY, BLOCK, GUARD, EXIT, ALL };
   
-  Level(const Texture &texture) {
+  Level(const Texture &texture, const ShaderProgram &program) {
     sprites[BLOCK].SetTextureRect(Rect(0, 132, 32, 100), texture);
     sprites[GUARD].SetTextureRect(Rect(99, 132, 131, 100), texture);
     sprites[EXIT].SetTextureRect(Rect(132, 265, 164, 200), texture);
-    sprites[BLOCK].SetWidth(32);
-    sprites[BLOCK].SetHeight(32);
-    sprites[EMPTY].SetWidth(32);
-    sprites[EMPTY].SetHeight(32);
-    sprites[GUARD].SetWidth(32);
-    sprites[GUARD].SetHeight(32);
-    sprites[EXIT].SetWidth(32);
-    sprites[EXIT].SetHeight(64);
+
+    for (int i = EMPTY; i < ALL; i++) {
+      if (i != EXIT) {
+        sprites[i].SetHeight(64);
+      }
+      sprites[i].SetWidth(32);
+      sprites[i].SetHeight(32);
+      sprites[i].GenVertexBuffers();
+      sprites[i].GenUVBuffers();
+      sprites[i].SetShaderProgram(program);
+    }
 
     srand(time(NULL));
   }
@@ -99,18 +102,20 @@ public:
           guards++;
   }
 
-  void Draw(const Texture &texture) {
+  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) {
     for (int i = 0; i < 16; i++) {
       for (int j = 0; j < 16; j++) {
         if (level[i][j] == EMPTY) continue;
         float x = j*32;
         float y = i*32;
-        sprites[level[i][j]].SetX(x);
-        sprites[level[i][j]].SetY(y);
-        sprites[level[i][j]].Draw(texture);
+        float width = sprites[level[i][j]].GetWidth();
+        float height = sprites[level[i][j]].GetHeight();
+        sprites[level[i][j]].SetX(x+width/2);
+        sprites[level[i][j]].SetY(y+height/2);
+        sprites[level[i][j]].Draw(texture, Projection, View);
       }
     }
-    sprites[level[0][7]].Draw(texture);
+    sprites[level[0][7]].Draw(texture, Projection, View);
   }
 
   Type level[16][16];

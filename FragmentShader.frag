@@ -2,11 +2,10 @@
 
 in vec2 UV;
 
-out vec3 color;
+out vec4 color;
 
 uniform sampler2D myTextureSampler;
 
 void main() {
-	color = texture2D(myTextureSampler, UV).rgb;
-	//color = vec3(0, 1, 0);
+	color = texture2D(myTextureSampler, UV).rgba;
 }

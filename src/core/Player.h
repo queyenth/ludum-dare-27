@@ -6,12 +6,13 @@ class Player {
 public:
   enum State { STADE, JUMP, FALL, MOVE, ALL };
   
-  Player(const Texture &texture) {
+  Player(const Texture &texture, const ShaderProgram &program) {
     sprite.SetHeight(64);
     sprite.SetWidth(32);
     sprite.SetX(32*7);
-    sprite.SetY(0);
+    sprite.SetY(32);
     sprite.SetTextureRect(Rect(0, 199, 32, 133), texture);
+    sprite.SetShaderProgram(program);
     move.SetHeight(64);
     move.SetWidth(32);
     move.SetSpeed(100);
@@ -88,9 +89,10 @@ public:
     }
   }
 
-  void Draw(const Texture &texture) {
+  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) {
     if (currentState == STADE) {
       sprite.SetTextureRect(Rect(0, 199, 32, 133), texture);
+      sprite.Draw(texture, Projection, View);
       move.SetCurrentFrame(0);
     }
     else if (currentState == MOVE) {
@@ -99,7 +101,6 @@ public:
       move.Draw(texture);
       return ;
     }
-    sprite.Draw(texture);
   }
 
   void Jump(const Texture &texture) {

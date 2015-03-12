@@ -4,7 +4,7 @@ Screen::~Screen() {
   KillWindow();
 }
 
-Screen::Screen() : fullscreen(false), nameOfWindow("PlatOK software") {
+Screen::Screen() : fullscreen(false), nameOfWindow("PlatOK Software") {
   isActive = true;
   isOpened = true;
 }
@@ -77,14 +77,13 @@ void Screen::InitGL() {
   glShadeModel(GL_SMOOTH);
   glClearDepth(1.0f);
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+  glDepthFunc(GL_LEQUAL);
   glEnable(GL_ALPHA_TEST);
   glEnable(GL_BLEND);
   glEnable(GL_TEXTURE_2D);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glViewport(0, 0, width, height);
-  glOrtho(0, width, 0, height, 0, 1);
 }
 
 void Screen::SwitchBuffers() {
@@ -117,6 +116,10 @@ void Screen::SetHeight(int height) {
 
 void Screen::SetFullscreen(bool fullscreen) {
   this->fullscreen = fullscreen;
+}
+
+void Screen::SetClearColor(se::Color color) {
+  glClearColor(color.r, color.g, color.b, color.a);
 }
 
 string Screen::GetName() const {
