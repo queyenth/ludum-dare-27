@@ -18,9 +18,9 @@ public:
 
   Rect(const Texture &texture) {
     this->left = 0;
-    this->right = texture.GetWidth();
+    this->right = (float)texture.GetWidth();
     this->top = 0;
-    this->bottom = texture.GetHeight();
+    this->bottom = (float)texture.GetHeight();
   }
 
   float left;

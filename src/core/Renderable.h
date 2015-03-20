@@ -14,7 +14,7 @@
 class Renderable {
 public:
   Renderable();
-  Renderable(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed);
+  Renderable(float x, float y, float width, float height, const ShaderProgram& program, bool isFixed);
   
   virtual ~Renderable();
   
@@ -24,12 +24,12 @@ public:
   float GetY() const;
   float GetWidth() const;
   float GetHeight() const;
-  se::Color GetColor() const;
   float GetAngle();
   glm::mat4 GetModelMatrix() const;
+  ShaderProgram GetShaderProgram() const;
+  Rect GetRect() const;
   void SetX(float x);
   void SetY(float y);
-  void SetColor(se::Color color);
   void SetWidth(float width);
   void SetHeight(float height);
   void SetFixedMode(bool isFixed);
@@ -42,6 +42,8 @@ public:
   bool IsFlippedX() const;
   bool IsFlippedY() const;
 
+  void CopyLocation(Renderable *);
+
 protected:
   bool isFlippedX;
   bool isFlippedY;
@@ -53,9 +55,11 @@ protected:
 
   GLfloat vertex_buffer[18];
   GLuint vertexbuffer;
+
+  GLfloat normal_buffer[18];
+  GLuint normalbuffer;
   
-  se::Color color;
-  ShaderProgram program;
+  const ShaderProgram* program;
   mutable glm::mat4 matrix;
   mutable bool positionChanged;
   bool isFixed;

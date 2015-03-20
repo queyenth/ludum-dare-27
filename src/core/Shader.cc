@@ -46,7 +46,7 @@ void Shader::Compile() {
   GLint Result = GL_FALSE;
   int InfoLogLength;
 
-  fprintf(stdout, "Compiling shader: %s\n", filepath);
+  fprintf(stdout, "Compiling shader: %s\n", filepath.c_str());
   char const * sourcePointer = shaderCode.c_str();
   glShaderSource(shader, 1, &sourcePointer, NULL);
   glCompileShader(shader);

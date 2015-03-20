@@ -5,8 +5,8 @@
 Sprite::Sprite() : Renderable() {
 }
 
-Sprite::Sprite(float x, float y, float width, float height,const se::Color& color, const ShaderProgram& program,
-  bool isFixed) : Renderable(x, y, width, height, color, program, isFixed) {
+Sprite::Sprite(float x, float y, float width, float height, const ShaderProgram& program,
+  bool isFixed) : Renderable(x, y, width, height, program, isFixed) {
 }
 
 Sprite::~Sprite() {
@@ -14,26 +14,31 @@ Sprite::~Sprite() {
     glDeleteBuffers(1, &uvbuffer);
 }
 
-void Sprite::Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) const {
+void Sprite::Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) {
   if (!texture.IsValid() || !width || !height || !glIsBuffer(vertexbuffer) || !glIsBuffer(uvbuffer)) return;
 
-  if (positionChanged) {
-    glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f));
-    matrix = glm::rotate(T, (float)angle, glm::vec3(0.0f, 0.0f, 1.0f));
-    positionChanged = false;
+  glm::mat4 T;
+  if (isFixed)
+    T = glm::translate(glm::mat4(1.0f), glm::vec3(x + width / 2 - View[3][0], y + height / 2 - View[3][1], 0.0f));
+  else
+    T = glm::translate(glm::mat4(1.0f), glm::vec3(x + width / 2, y + height / 2, 0.0f));
+  matrix = glm::rotate(T, (float)angle, glm::vec3(0.0f, 0.0f, 1.0f));
+
+  if (flipped) {
+    if (isFlippedY)
+      std::swap(textureRect.bottom, textureRect.top);
+    if (isFlippedX)
+      std::swap(textureRect.left, textureRect.right);
+    GenUVBuffers();
+    flipped = false;
   }
 
-  float top = isFlippedY ? textureRect.bottom : textureRect.top;
-  float left = isFlippedX ? textureRect.right : textureRect.left;
-  float right = isFlippedX ? textureRect.left : textureRect.right;
-  float bottom = isFlippedY ? textureRect.top : textureRect.bottom;
-
-  GLuint MatrixID = glGetUniformLocation(program, "MVP");
-  GLuint TextureID = glGetUniformLocation(program, "myTextureSampler");
+  GLuint MatrixID = glGetUniformLocation(*program, "MVP");
+  GLuint TextureID = glGetUniformLocation(*program, "myTextureSampler");
 
   glm::mat4 MVP = Projection * View * matrix;
 
-  glUseProgram(program);
+  glUseProgram(*program);
 
   glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
@@ -63,10 +68,22 @@ void Sprite::Draw(const Texture &texture, const glm::mat4 &Projection, const glm
     (void *)0
   );
 
+  glEnableVertexAttribArray(2);
+  glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+  glVertexAttribPointer(
+    2,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
+
   glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
 
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
+  glDisableVertexAttribArray(2);
 }
 
 void Sprite::GenUVBuffers() {

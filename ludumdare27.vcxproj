@@ -51,18 +51,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Dropbox\Projects\Ludum-Dare-27\glm\include;D:\Dropbox\Projects\Ludum-Dare-27\GLFW\include;D:\Dropbox\Projects\Ludum-Dare-27\glew\include;D:\Dropbox\Projects\Ludum-Dare-27\SOIL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opengl32.lib;glu32.lib;SOIL\lib\SOIL.lib;GLFW\lib\glfw3.lib;glew\lib\Release\Win32\glew32.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
@@ -96,10 +96,12 @@
     <ClInclude Include="src\core\Animation.h" />
     <ClInclude Include="src\core\Camera.h" />
     <ClInclude Include="src\core\Color.h" />
+    <ClInclude Include="src\core\Entity.h" />
     <ClInclude Include="src\core\Input.h" />
     <ClInclude Include="src\core\Level.h" />
     <ClInclude Include="src\core\Matrix.h" />
     <ClInclude Include="src\core\Physics.h" />
+    <ClInclude Include="src\core\Platokdef.h" />
     <ClInclude Include="src\core\Player.h" />
     <ClInclude Include="src\core\Rect.h" />
     <ClInclude Include="src\core\Renderable.h" />

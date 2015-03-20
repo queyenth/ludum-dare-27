@@ -11,11 +11,11 @@
 class Sprite : public Renderable {
 public:
   Sprite();
-  Sprite(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed);
+  Sprite(float x, float y, float width, float height, const ShaderProgram& program, bool isFixed);
   
   virtual ~Sprite();
   
-  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) const;
+  void Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View);
   void GenUVBuffers();
   void SetTexture(const Texture &texture, Rect textureRect);
   void SetTexture(const Texture &texture);

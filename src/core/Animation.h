@@ -6,7 +6,7 @@
 class Animation : public Renderable {
 public:
   Animation();
-  Animation(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed);
+  Animation(float x, float y, float width, float height, const ShaderProgram& program, bool isFixed);
   
   virtual ~Animation();
   
@@ -25,6 +25,7 @@ private:
   std::vector<GLuint> uvbuffer;
 
   double speed;
+  double startAnimation;
   mutable int currentFrame;
   bool loop;
 };

@@ -3,18 +3,21 @@
 #include <GLFW/glfw3.h>
 #include <gtc/matrix_transform.hpp>
 
-Animation::Animation() : Renderable(), currentFrame(0), speed(0.1) {
+Animation::Animation() : Renderable(), currentFrame(0), speed(0.1), startAnimation(0) {
 }
 
 
-Animation::Animation(float x, float y, float width, float height, const se::Color &color, const ShaderProgram& program, bool isFixed) :
-  Renderable(x, y, width, height, color, program, isFixed), currentFrame(0), speed(0.1) {
+Animation::Animation(float x, float y, float width, float height, const ShaderProgram& program, bool isFixed) :
+  Renderable(x, y, width, height, program, isFixed), currentFrame(0), speed(0.1), startAnimation(0) {
 }
 
-Animation::~Animation(){}
+Animation::~Animation() {
+  for (auto i : uvbuffer)
+    if (glIsBuffer(i))
+      glDeleteBuffers(1, &i);
+}
   
 void Animation::Draw(const Texture &texture, const glm::mat4 &Projection, const glm::mat4 &View) {
-  static double test = 0;
   if (!texture.IsValid() || !width || !height || !textureRects.size()) return;
 
   if (positionChanged) {
@@ -25,26 +28,21 @@ void Animation::Draw(const Texture &texture, const glm::mat4 &Projection, const 
 
   if (flipped) {
     for (int i = 0; i < textureRects.size(); i++) {
-      float top = isFlippedY ? textureRects[i].bottom : textureRects[i].top;
-      float left = isFlippedX ? textureRects[i].right : textureRects[i].left;
-      float right = isFlippedX ? textureRects[i].left : textureRects[i].right;
-      float bottom = isFlippedY ? textureRects[i].top : textureRects[i].bottom;
-      textureRects[i].bottom = bottom;
-      textureRects[i].right = right;
-      textureRects[i].left = left;
-      textureRects[i].top = top;
+      if (isFlippedY)
+        std::swap(textureRects[i].bottom, textureRects[i].top);
+      if (isFlippedX)
+        std::swap(textureRects[i].left, textureRects[i].right);
     }
     GenUVBuffers();
     flipped = false;
   }
 
-
-  GLuint MatrixID = glGetUniformLocation(program, "MVP");
-  GLuint TextureID = glGetUniformLocation(program, "myTextureSampler");
+  GLuint MatrixID = glGetUniformLocation(*program, "MVP");
+  GLuint TextureID = glGetUniformLocation(*program, "myTextureSampler");
 
   glm::mat4 MVP = Projection * View * matrix;
 
-  glUseProgram(program);
+  glUseProgram(*program);
 
   glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
@@ -74,20 +72,32 @@ void Animation::Draw(const Texture &texture, const glm::mat4 &Projection, const 
     (void *)0
   );
 
+  glEnableVertexAttribArray(2);
+  glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+  glVertexAttribPointer(
+    2,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void *)0
+  );
+
   glDrawArrays(GL_TRIANGLES, 0, 2 * 3);
 
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
+  glDisableVertexAttribArray(2);
 
   if (currentFrame+1 < textureRects.size()) {
-    if (glfwGetTime() - test >= speed) {
+    if (glfwGetTime() - startAnimation >= speed) {
       currentFrame++;
-      test = glfwGetTime();
+      startAnimation = glfwGetTime();
     }
   }
-  else if (loop && glfwGetTime() - test >= speed) {
+  else if (loop && glfwGetTime() - startAnimation >= speed) {
     currentFrame = 0;
-    test = glfwGetTime();
+    startAnimation = glfwGetTime();
   }
 }
 
